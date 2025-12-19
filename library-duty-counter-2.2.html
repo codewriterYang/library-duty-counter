@@ -1,0 +1,1142 @@
+<!-- 在2.1的基础上对其“学生值班记录”中的学生展示，从滑动变成全部展示和折叠展示效果 -->
+<!-- 现在学生列表默认展示全部学生，无滚动条，同时支持一键折叠 / 展开，兼顾 “全展示” 和 “精简视图” 两种需求～ -->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>图书馆勤工助学值班记录器</title>
+		<!-- Tailwind CSS CDN -->
+		<script src="https://cdn.tailwindcss.com"></script>
+		<!-- Font Awesome CDN -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+		<style>
+			/* 全局美化样式 */
+			:root {
+				--primary: #2563eb;
+				--primary-hover: #1d4ed8;
+				--success: #10b981;
+				--success-hover: #059669;
+				--success-light: #ecfdf5;
+				--warning: #f59e0b;
+				--warning-hover: #d97706;
+				--warning-light: #fef3c7;
+				--danger: #ef4444;
+				--danger-hover: #dc2626;
+				--danger-light: #fee2e2;
+				--gray-light: #f9fafb;
+				--gray-border: #e5e7eb;
+				--gray-bg: #f5f5f5;
+				--gray-text: #6b7280;
+				--gray-dark: #374151;
+			}
+
+			body {
+				font-family: "Inter", "Microsoft YaHei", sans-serif;
+				background-color: #f3f4f6;
+			}
+
+			/* 模式按钮样式增强 */
+			.mode-btn {
+				transition: all 0.2s ease;
+			}
+
+			.mode-btn.active {
+				background-color: var(--primary) !important;
+				color: white !important;
+				box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+				border: 1px solid rgba(255, 255, 255, 0.3);
+			}
+
+			.mode-btn:not(.active):hover {
+				background-color: #e5e7eb !important;
+			}
+
+			/* 汇总容器显隐动画 */
+			.summary-container {
+				max-height: 0;
+				opacity: 0;
+				overflow: hidden;
+				transition: all 0.3s ease-in-out;
+			}
+
+			.summary-container.show {
+				max-height: 1000px;
+				opacity: 1;
+			}
+
+			/* 新增：学生列表展开/折叠动画 */
+			.student-list-container {
+				transition: all 0.3s ease-in-out;
+				opacity: 1;
+				height: auto;
+			}
+
+			.student-list-container.collapsed {
+				height: 60px !important;
+				opacity: 0.8;
+				overflow: hidden;
+			}
+
+			.student-list-collapse-tip {
+				display: none;
+				text-align: center;
+				padding: 1rem;
+				color: var(--gray-text);
+			}
+
+			.student-list-container.collapsed .student-list-collapse-tip {
+				display: block;
+			}
+
+			/* Toast美化 */
+			#toast {
+				opacity: 0;
+				transition: all 0.3s ease;
+				border-radius: 0.75rem;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+				padding: 0.75rem 1.25rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+
+			#toast.show {
+				opacity: 0.95;
+			}
+
+			/* 表格美化 */
+			#summary-table {
+				border-radius: 0.5rem;
+				overflow: hidden;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+			}
+
+			#summary-table th {
+				background-color: var(--gray-light);
+				font-weight: 600;
+				color: var(--gray-dark);
+			}
+
+			#summary-table td,
+			#summary-table th {
+				padding: 0.75rem 1rem;
+				border-color: var(--gray-border);
+			}
+
+			#summary-table tr:hover {
+				background-color: rgba(249, 250, 251, 0.8);
+			}
+
+			#summary-table tr:last-child {
+				background-color: #eff6ff !important;
+			}
+
+			/* 按钮通用美化 */
+			.btn-custom {
+				transition: all 0.2s ease;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 0.375rem;
+				font-weight: 500;
+				border-radius: 0.5rem;
+				font-size: 0.875rem;
+			}
+
+			.btn-custom:hover {
+				transform: translateY(-1px);
+			}
+
+			.btn-primary {
+				background-color: var(--primary);
+				color: white;
+			}
+
+			.btn-primary:hover {
+				background-color: var(--primary-hover);
+			}
+
+			.btn-success {
+				background-color: var(--success);
+				color: white;
+			}
+
+			.btn-success:hover {
+				background-color: var(--success-hover);
+			}
+
+			.btn-warning {
+				background-color: var(--warning);
+				color: white;
+			}
+
+			.btn-warning:hover {
+				background-color: var(--warning-hover);
+			}
+
+			.btn-danger {
+				background-color: var(--danger);
+				color: white;
+			}
+
+			.btn-danger:hover {
+				background-color: var(--danger-hover);
+			}
+
+			.btn-outline {
+				background-color: white;
+				border: 1px solid var(--gray-border);
+				color: var(--gray-dark);
+			}
+
+			.btn-outline:hover {
+				background-color: var(--gray-light);
+			}
+
+			/* 卡片美化 */
+			.card {
+				background-color: white;
+				border-radius: 0.75rem;
+				box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+				transition: box-shadow 0.2s ease;
+			}
+
+			.card:hover {
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+			}
+
+			/* 空状态美化 */
+			.empty-state {
+				color: var(--gray-text);
+				text-align: center;
+				padding: 3rem 1rem;
+			}
+
+			.empty-state i {
+				font-size: 2.5rem;
+				color: #d1d5db;
+				margin-bottom: 1rem;
+			}
+
+			/* 统计卡片美化（底部） */
+			.stats-card {
+				background-color: white;
+				border-radius: 0.75rem;
+				padding: 1.5rem;
+				text-align: center;
+				border: 1px solid var(--gray-border);
+				transition: transform 0.2s ease;
+			}
+
+			.stats-card:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+			}
+
+			.stats-card h3 {
+				font-size: 0.875rem;
+				color: var(--gray-text);
+				margin-bottom: 0.75rem;
+			}
+
+			.stats-card p {
+				font-size: 1.5rem;
+				font-weight: 700;
+			}
+
+			.stats-card-library p {
+				color: var(--primary);
+			}
+
+			.stats-card-circulation p {
+				color: var(--success);
+			}
+
+			.stats-card-students p {
+				color: #8b5cf6;
+			}
+
+			/* 模态框动画 */
+			#batch-import-modal {
+				opacity: 0;
+				visibility: hidden;
+				transition: all 0.2s ease;
+			}
+
+			#batch-import-modal:not(.hidden) {
+				opacity: 1;
+				visibility: visible;
+			}
+
+			.modal-content {
+				transform: scale(0.95);
+				transition: transform 0.2s ease;
+			}
+
+			#batch-import-modal:not(.hidden) .modal-content {
+				transform: scale(1);
+			}
+
+			/* 新增：学生操作组样式 */
+			.operation-group {
+				background-color: var(--gray-bg);
+				border: 1px solid var(--gray-border);
+				border-radius: 0.5rem;
+				padding: 0.25rem;
+				display: inline-flex;
+				gap: 0.125rem;
+			}
+
+			/* 新增：差异化按钮样式 */
+			/* 添加按钮（主操作） */
+			.btn-add {
+				background-color: var(--success-light);
+				color: var(--success);
+				border: 1px solid transparent;
+				padding: 0.25rem 0.75rem;
+				border-radius: 0.4rem;
+				transition: all 0.2s ease;
+			}
+
+			.btn-add:hover {
+				background-color: var(--success);
+				color: white;
+				transform: scale(1.03);
+			}
+
+			/* 清零按钮（次操作） */
+			.btn-clear {
+				background-color: white;
+				color: var(--warning);
+				border: 1px solid var(--warning-light);
+				padding: 0.25rem 0.625rem;
+				border-radius: 0.375rem;
+				font-size: 0.8125rem;
+				transition: all 0.2s ease;
+			}
+
+			.btn-clear:hover {
+				background-color: var(--warning-light);
+			}
+
+			/* 删除按钮（危险操作） */
+			.btn-delete {
+				background-color: var(--danger-light);
+				color: var(--danger);
+				border: 1px solid transparent;
+				padding: 0.25rem 0.875rem;
+				border-radius: 0.4rem;
+				transition: all 0.2s ease;
+			}
+
+			.btn-delete:hover {
+				background-color: var(--danger);
+				color: white;
+				transform: rotate(1deg) scale(1.03);
+			}
+
+			/* 隐藏类 */
+			.hidden {
+				display: none !important;
+			}
+
+			button:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+		</style>
+	</head>
+	<body class="min-h-screen py-6 px-4 md:py-10 md:px-8">
+		<div class="max-w-4xl mx-auto card p-6 md:p-8">
+			<h1 class="text-2xl md:text-3xl font-bold text-center text-gray-800 mb-8">
+				<i class="fa-solid fa-book text-primary mr-2"></i>图书馆勤工助学值班记录器
+			</h1>
+
+			<!-- 模式切换按钮组 -->
+			<div class="shift-mode-group flex flex-wrap gap-2 mb-8">
+				<button id="mode-both"
+					class="mode-btn btn-custom px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 active">
+					<i class="fa-solid fa-layer-group mr-1"></i>双班模式
+				</button>
+				<button id="mode-only-library"
+					class="mode-btn btn-custom px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300">
+					<i class="fa-solid fa-book-open mr-1"></i>仅书库模式
+				</button>
+				<button id="mode-only-circulation"
+					class="mode-btn btn-custom px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300">
+					<i class="fa-solid fa-arrows-rotate mr-1"></i>仅流通模式
+				</button>
+			</div>
+
+			<!-- 学生添加区 -->
+			<div class="card p-5 mb-8">
+				<h3 class="font-semibold mb-4 text-gray-800"><i class="fa-solid fa-user-plus text-primary mr-2"></i>添加学生
+				</h3>
+				<div class="flex flex-col md:flex-row gap-3">
+					<input type="text" id="student-name" placeholder="请输入学生姓名"
+						class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+					<button id="add-student-btn" class="btn-custom btn-primary px-4 py-2 rounded-lg">
+						<i class="fa-solid fa-plus"></i>添加
+					</button>
+					<button id="batch-import-btn" class="btn-custom btn-success px-4 py-2 rounded-lg">
+						<i class="fa-solid fa-file-import"></i>批量导入
+					</button>
+				</div>
+			</div>
+
+			<!-- 学生列表（核心修改：新增折叠/展开按钮） -->
+			<div class="mb-8">
+				<div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+					<h3 class="font-semibold text-gray-800 text-lg"><i
+							class="fa-solid fa-list text-primary mr-2"></i>学生值班记录</h3>
+					<div class="flex gap-2">
+						<!-- 新增：折叠/展开学生列表按钮 -->
+						<button id="toggle-student-list-btn" class="btn-custom btn-outline px-3 py-2 rounded-lg">
+							<i class="fa-solid fa-chevron-up mr-1"></i>折叠学生列表
+						</button>
+						<!-- 原有：显示/隐藏汇总按钮 -->
+						<button id="toggle-summary-btn" class="btn-custom btn-outline px-3 py-2 rounded-lg">
+							<i class="fa-solid fa-table mr-1"></i>显示汇总
+						</button>
+					</div>
+				</div>
+				<!-- 核心修改：移除滚动限制，新增折叠容器类 -->
+				<div id="student-list"
+					class="student-list-container space-y-2 p-3 border border-gray-border rounded-lg bg-white">
+					<!-- 折叠提示（默认隐藏） -->
+					<div class="student-list-collapse-tip">
+						<i class="fa-solid fa-angle-down mr-1"></i> 学生列表已折叠，点击按钮展开查看全部
+					</div>
+					<!-- 空状态 -->
+					<div class="empty-state">
+						<i class="fa-solid fa-user-group"></i>
+						<p>暂无学生数据，请添加学生</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- 汇总表格（默认隐藏） -->
+			<div id="summary-container" class="summary-container mb-8">
+				<div class="flex justify-between items-center mb-4">
+					<h3 class="font-semibold text-gray-800 text-lg"><i
+							class="fa-solid fa-table text-primary mr-2"></i>值班汇总</h3>
+					<span class="text-sm text-gray-text">更新时间：<span id="table-update-time">--</span></span>
+				</div>
+				<div class="overflow-x-auto bg-white rounded-lg shadow-sm">
+					<table id="summary-table" class="w-full border-collapse">
+						<thead>
+							<tr>
+								<th class="border border-gray-border">序号</th>
+								<th class="border border-gray-border">姓名</th>
+								<th class="border border-gray-border">书库班次数</th>
+								<th class="border border-gray-border">流通班次数</th>
+								<th class="border border-gray-border">总数</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td colspan="5" class="border border-gray-border empty-state">
+									<i class="fa-solid fa-file-excel"></i>
+									<p>暂无汇总数据</p>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- 底部统计卡片（核心调整：移到最下方） -->
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-gray-border">
+				<div class="stats-card stats-card-library">
+					<h3>书库班总次数</h3>
+					<p id="total-library" class="text-2xl">0</p>
+				</div>
+				<div class="stats-card stats-card-circulation">
+					<h3>流通班总次数</h3>
+					<p id="total-circulation" class="text-2xl">0</p>
+				</div>
+				<div class="stats-card stats-card-students">
+					<h3>参与学生总数</h3>
+					<p id="total-students" class="text-2xl">0</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- 批量导入模态框 -->
+		<div id="batch-import-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden">
+			<div class="modal-content bg-white rounded-lg p-6 w-full max-w-md mx-4">
+				<div class="flex justify-between items-center mb-4">
+					<h3 class="font-semibold text-lg text-gray-800"><i
+							class="fa-solid fa-file-import text-primary mr-2"></i>批量导入学生</h3>
+					<button id="close-modal-btn" class="text-gray-text hover:text-gray-dark transition-colors">
+						<i class="fa-solid fa-xmark text-lg"></i>
+					</button>
+				</div>
+				<textarea id="batch-student-text" placeholder="请输入学生姓名，支持逗号、换行、空格分隔（例：张三,李四 王五
+赵六）" class="w-full h-32 px-3 py-2 border border-gray-border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none"></textarea>
+				<div class="flex justify-end gap-3">
+					<button id="cancel-import-btn" class="btn-custom btn-outline px-4 py-2 rounded-lg">取消</button>
+					<button id="confirm-import-btn" class="btn-custom btn-primary px-4 py-2 rounded-lg">确认导入</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Toast提示容器 -->
+		<div id="toast" class="fixed top-6 right-6 z-50">
+			<i class="fa-solid fa-circle-info"></i>
+			<span>操作提示</span>
+		</div>
+
+		<script>
+			// ===================== 1. 全局常量与状态管理 =====================
+			const SHIFT_MODE = {
+				BOTH: 1, // 双班模式
+				ONLY_LIBRARY: 2, // 仅书库模式
+				ONLY_CIRCULATION: 3 // 仅流通模式
+			};
+			// 初始化当前模式（优先从localStorage读取，默认双班）
+			let currentShiftMode = Number(localStorage.getItem('shiftMode')) || SHIFT_MODE.BOTH;
+			// 汇总显隐状态（优先从localStorage读取，默认隐藏）
+			let isSummaryShow = localStorage.getItem('isSummaryShow') === 'true' || false;
+			// 新增：学生列表展开/折叠状态（优先从localStorage读取，默认展开）
+			let isStudentListExpanded = localStorage.getItem('isStudentListExpanded') !== 'false';
+			// Toast定时器（防叠加）
+			let toastTimer = null;
+
+			// ===================== 2. 工具函数 =====================
+			/**
+			 * 显示Toast提示
+			 * @param {string} text 提示文本
+			 * @param {string} type 类型：info/success/warning/error
+			 */
+			function showToast(text, type = 'info') {
+				const toastEl = document.getElementById('toast');
+				clearTimeout(toastTimer); // 清空旧定时器
+
+				// 设置Toast图标和颜色
+				const icons = {
+					info: 'fa-circle-info',
+					success: 'fa-circle-check text-green-500',
+					warning: 'fa-circle-exclamation text-yellow-500',
+					error: 'fa-circle-xmark text-red-500'
+				};
+				toastEl.innerHTML = `
+        <i class="fa-solid ${icons[type]}"></i>
+        <span>${text}</span>
+      `;
+
+				toastEl.classList.add('show');
+				toastTimer = setTimeout(() => {
+					toastEl.classList.remove('show');
+				}, 2500);
+			}
+
+			/**
+			 * 更新模式按钮选中态
+			 */
+			function updateModeBtnStyle() {
+				const btns = {
+					[SHIFT_MODE.BOTH]: document.getElementById('mode-both'),
+					[SHIFT_MODE.ONLY_LIBRARY]: document.getElementById('mode-only-library'),
+					[SHIFT_MODE.ONLY_CIRCULATION]: document.getElementById('mode-only-circulation')
+				};
+				// 重置所有按钮样式
+				Object.values(btns).forEach(btn => btn.classList.remove('active'));
+				// 给当前模式按钮加选中态
+				btns[currentShiftMode].classList.add('active');
+			}
+
+			/**
+			 * 切换班次模式
+			 * @param {number} mode 目标模式
+			 */
+			function switchShiftMode(mode) {
+				currentShiftMode = mode;
+				// 持久化模式
+				localStorage.setItem('shiftMode', mode);
+				// 显示提示
+				const modeText = {
+					[SHIFT_MODE.BOTH]: '已切换为双班模式',
+					[SHIFT_MODE.ONLY_LIBRARY]: '已切换为仅书库模式',
+					[SHIFT_MODE.ONLY_CIRCULATION]: '已切换为仅流通模式'
+				};
+				showToast(modeText[mode], 'success');
+				// 全局刷新页面
+				refreshPage();
+			}
+
+			/**
+			 * 切换汇总显隐状态
+			 */
+			function toggleSummary() {
+				isSummaryShow = !isSummaryShow;
+				// 持久化显隐状态
+				localStorage.setItem('isSummaryShow', isSummaryShow);
+				// 更新按钮文案和样式
+				const toggleBtn = document.getElementById('toggle-summary-btn');
+				if (isSummaryShow) {
+					toggleBtn.innerHTML = '<i class="fa-solid fa-chevron-up mr-1"></i>隐藏汇总';
+					document.getElementById('summary-container').classList.add('show');
+					showToast('已显示值班汇总', 'success');
+				} else {
+					toggleBtn.innerHTML = '<i class="fa-solid fa-chevron-down mr-1"></i>显示汇总';
+					document.getElementById('summary-container').classList.remove('show');
+					showToast('已隐藏值班汇总', 'info');
+				}
+				// 刷新汇总表格（确保数据最新）
+				renderSummaryTable();
+			}
+
+			/**
+			 * 新增：切换学生列表展开/折叠状态
+			 */
+			function toggleStudentList() {
+				isStudentListExpanded = !isStudentListExpanded;
+				// 持久化状态
+				localStorage.setItem('isStudentListExpanded', isStudentListExpanded);
+				// 更新按钮文案和样式
+				const toggleBtn = document.getElementById('toggle-student-list-btn');
+				const listContainer = document.getElementById('student-list');
+
+				if (isStudentListExpanded) {
+					toggleBtn.innerHTML = '<i class="fa-solid fa-chevron-up mr-1"></i>折叠学生列表';
+					listContainer.classList.remove('collapsed');
+					showToast('已展开所有学生记录', 'success');
+				} else {
+					toggleBtn.innerHTML = '<i class="fa-solid fa-chevron-down mr-1"></i>展开学生列表';
+					listContainer.classList.add('collapsed');
+					showToast('已折叠学生列表', 'info');
+				}
+			}
+
+			/**
+			 * 全局刷新（统一更新所有适配内容）
+			 */
+			function refreshPage() {
+				updateTotalStats(); // 更新顶部统计
+				renderStudentList(); // 重新渲染学生列表（含按钮显隐）
+				renderSummaryTable(); // 重新渲染汇总表格（含列显隐+总数计算）
+				updateModeBtnStyle(); // 更新模式按钮选中态
+
+				// 更新汇总显隐按钮和容器状态
+				const toggleSummaryBtn = document.getElementById('toggle-summary-btn');
+				if (isSummaryShow) {
+					toggleSummaryBtn.innerHTML = '<i class="fa-solid fa-chevron-up mr-1"></i>隐藏汇总';
+					document.getElementById('summary-container').classList.add('show');
+				} else {
+					toggleSummaryBtn.innerHTML = '<i class="fa-solid fa-chevron-down mr-1"></i>显示汇总';
+					document.getElementById('summary-container').classList.remove('show');
+				}
+
+				// 新增：更新学生列表展开/折叠状态
+				const toggleStudentBtn = document.getElementById('toggle-student-list-btn');
+				const listContainer = document.getElementById('student-list');
+				if (isStudentListExpanded) {
+					toggleStudentBtn.innerHTML = '<i class="fa-solid fa-chevron-up mr-1"></i>折叠学生列表';
+					listContainer.classList.remove('collapsed');
+				} else {
+					toggleStudentBtn.innerHTML = '<i class="fa-solid fa-chevron-down mr-1"></i>展开学生列表';
+					listContainer.classList.add('collapsed');
+				}
+			}
+
+			// ===================== 3. 核心业务函数 =====================
+			/**
+			 * 获取所有学生数据
+			 * @returns {Array} 学生数组
+			 */
+			function getStudents() {
+				return JSON.parse(localStorage.getItem('libraryStudents')) || [];
+			}
+
+			/**
+			 * 保存学生数据到localStorage
+			 * @param {Array} students 学生数组
+			 */
+			function saveStudents(students) {
+				localStorage.setItem('libraryStudents', JSON.stringify(students));
+			}
+
+			/**
+			 * 更新底部统计（适配模式显隐）
+			 */
+			function updateTotalStats() {
+				const students = getStudents();
+				// 计算总次数
+				const totalLibrary = students.reduce((sum, s) => sum + (s.libraryCount || 0), 0);
+				const totalCirculation = students.reduce((sum, s) => sum + (s.circulationCount || 0), 0);
+
+				// 根据模式控制统计项显隐
+				const libraryStatsEl = document.getElementById('total-library').parentElement;
+				const circulationStatsEl = document.getElementById('total-circulation').parentElement;
+
+				libraryStatsEl.classList.toggle('hidden', currentShiftMode === SHIFT_MODE.ONLY_CIRCULATION);
+				circulationStatsEl.classList.toggle('hidden', currentShiftMode === SHIFT_MODE.ONLY_LIBRARY);
+
+				// 更新数值
+				document.getElementById('total-library').textContent = totalLibrary;
+				document.getElementById('total-circulation').textContent = totalCirculation;
+				document.getElementById('total-students').textContent = students.length;
+			}
+
+			/**
+			 * 渲染学生条目（核心优化：按钮分组+差异化样式）
+			 * @param {Object} student 学生对象
+			 * @returns {string} 学生条目HTML
+			 */
+			function renderStudentItem(student) {
+				// 按钮显隐判断
+				const isShowLibrary = [SHIFT_MODE.BOTH, SHIFT_MODE.ONLY_LIBRARY].includes(currentShiftMode);
+				const isShowCirculation = [SHIFT_MODE.BOTH, SHIFT_MODE.ONLY_CIRCULATION].includes(currentShiftMode);
+
+				// 书库操作组（分组+差异化按钮）
+				const libraryGroup = isShowLibrary ?
+					`
+          <div class="operation-group mr-2">
+            <button class="add-library btn-add" data-name="${student.name}">
+              <i class="fa-solid fa-plus-sm"></i>书库
+            </button>
+            <button class="clear-library btn-clear" data-name="${student.name}">
+              <i class="fa-solid fa-rotate-left"></i>清零
+            </button>
+          </div>
+        ` :
+					'';
+
+				// 流通操作组（分组+差异化按钮）
+				const circulationGroup = isShowCirculation ?
+					`
+          <div class="operation-group mr-3">
+            <button class="add-circulation btn-add" data-name="${student.name}">
+              <i class="fa-solid fa-plus-sm"></i>流通
+            </button>
+            <button class="clear-circulation btn-clear" data-name="${student.name}">
+              <i class="fa-solid fa-rotate-left"></i>清零
+            </button>
+          </div>
+        ` :
+					'';
+
+				// 删除按钮（独立+危险样式）
+				const deleteBtn = `
+        <button class="delete-student btn-delete" data-name="${student.name}">
+          <i class="fa-solid fa-xmark"></i>删除
+        </button>
+      `;
+
+				// 学生条目HTML（优化按钮布局）
+				return `
+        <div class="student-item p-3 border border-gray-border rounded-lg mb-2 flex justify-between items-center bg-white hover:shadow-sm transition-all">
+          <span class="font-medium text-gray-dark">${student.name}</span>
+          <div class="btn-group flex flex-wrap items-center">
+            ${libraryGroup}
+            ${circulationGroup}
+            ${deleteBtn}
+          </div>
+        </div>
+      `;
+			}
+
+			/**
+			 * 渲染学生列表（核心修改：移除滚动，适配折叠状态）
+			 */
+			function renderStudentList() {
+				const students = getStudents();
+				const listEl = document.getElementById('student-list');
+
+				if (students.length === 0) {
+					listEl.innerHTML = `
+          <!-- 折叠提示 -->
+          <div class="student-list-collapse-tip">
+            <i class="fa-solid fa-angle-down mr-1"></i> 学生列表已折叠，点击按钮展开查看全部
+          </div>
+          <!-- 空状态 -->
+          <div class="empty-state">
+            <i class="fa-solid fa-user-group"></i>
+            <p>暂无学生数据，请添加学生</p>
+          </div>
+        `;
+					return;
+				}
+
+				let listHtml = '';
+				// 先加折叠提示
+				listHtml += `
+        <div class="student-list-collapse-tip">
+          <i class="fa-solid fa-angle-down mr-1"></i> 学生列表已折叠，点击按钮展开查看全部
+        </div>
+      `;
+				// 再渲染所有学生（无滚动，全部展示）
+				students.forEach(student => {
+					listHtml += renderStudentItem(student);
+				});
+				listEl.innerHTML = listHtml;
+
+				// 绑定学生列表按钮事件
+				bindStudentListEvents();
+			}
+
+			/**
+			 * 渲染汇总表格（适配列显隐+总数计算）
+			 */
+			function renderSummaryTable() {
+				const students = getStudents();
+				const tableEl = document.getElementById('summary-table');
+
+				// 渲染表头
+				let headerHtml = '<thead><tr>';
+				headerHtml += '<th class="border border-gray-border">序号</th>';
+				headerHtml += '<th class="border border-gray-border">姓名</th>';
+				if (currentShiftMode !== SHIFT_MODE.ONLY_CIRCULATION) {
+					headerHtml += '<th class="border border-gray-border">书库班次数</th>';
+				}
+				if (currentShiftMode !== SHIFT_MODE.ONLY_LIBRARY) {
+					headerHtml += '<th class="border border-gray-border">流通班次数</th>';
+				}
+				headerHtml += '<th class="border border-gray-border">总数</th></tr></thead>';
+
+				// 渲染表格内容
+				let bodyHtml = '<tbody>';
+				let totalLibraryAll = 0;
+				let totalCirculationAll = 0;
+				let totalAll = 0;
+
+				if (students.length === 0) {
+					const colSpan = currentShiftMode === SHIFT_MODE.BOTH ? 5 : 4;
+					bodyHtml += `
+          <tr>
+            <td colspan="${colSpan}" class="border border-gray-border empty-state">
+              <i class="fa-solid fa-file-excel"></i>
+              <p>暂无汇总数据</p>
+            </td>
+          </tr>
+        `;
+				} else {
+					students.forEach((student, index) => {
+						const libCount = student.libraryCount || 0;
+						const cirCount = student.circulationCount || 0;
+						totalLibraryAll += libCount;
+						totalCirculationAll += cirCount;
+
+						// 单行总数（适配模式）
+						let rowTotal = 0;
+						bodyHtml += `<tr><td class="border border-gray-border">${index + 1}</td>`;
+						bodyHtml += `<td class="border border-gray-border font-medium">${student.name}</td>`;
+
+						if (currentShiftMode !== SHIFT_MODE.ONLY_CIRCULATION) {
+							bodyHtml += `<td class="border border-gray-border">${libCount}</td>`;
+							rowTotal += libCount;
+						}
+						if (currentShiftMode !== SHIFT_MODE.ONLY_LIBRARY) {
+							bodyHtml += `<td class="border border-gray-border">${cirCount}</td>`;
+							rowTotal += cirCount;
+						}
+
+						bodyHtml += `<td class="border border-gray-border font-medium">${rowTotal}</td></tr>`;
+						totalAll += rowTotal;
+					});
+
+					// 渲染总计行
+					bodyHtml += '<tr class="font-bold">';
+					bodyHtml += '<td colspan="2" class="border border-gray-border px-4 py-2">总计</td>';
+					if (currentShiftMode !== SHIFT_MODE.ONLY_CIRCULATION) {
+						bodyHtml += `<td class="border border-gray-border">${totalLibraryAll}</td>`;
+					}
+					if (currentShiftMode !== SHIFT_MODE.ONLY_LIBRARY) {
+						bodyHtml += `<td class="border border-gray-border">${totalCirculationAll}</td>`;
+					}
+					bodyHtml += `<td class="border border-gray-border">${totalAll}</td></tr>`;
+				}
+
+				bodyHtml += '</tbody>';
+				tableEl.innerHTML = headerHtml + bodyHtml;
+
+				// 更新表格更新时间
+				document.getElementById('table-update-time').textContent = new Date().toLocaleString('zh-CN', {
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+					hour: '2-digit',
+					minute: '2-digit',
+					second: '2-digit'
+				});
+			}
+
+			/**
+			 * 添加单个学生
+			 * @param {string} name 学生姓名
+			 * @returns {boolean} 是否添加成功
+			 */
+			function addStudent(name) {
+				if (!name.trim()) {
+					showToast('请输入有效的学生姓名', 'warning');
+					return false;
+				}
+
+				const students = getStudents();
+				// 检查是否已存在
+				const exists = students.some(student => student.name.trim() === name.trim());
+				if (exists) {
+					showToast(`学生【${name}】已存在`, 'warning');
+					return false;
+				}
+
+				// 添加新学生
+				students.push({
+					name: name.trim(),
+					libraryCount: 0,
+					circulationCount: 0
+				});
+				saveStudents(students);
+				showToast(`成功添加学生【${name}】`, 'success');
+				return true;
+			}
+
+			/**
+			 * 批量导入学生
+			 * @param {string} text 批量文本
+			 */
+			function batchImportStudents(text) {
+				if (!text.trim()) {
+					showToast('请输入要导入的学生姓名', 'warning');
+					return;
+				}
+
+				// 分割姓名（支持逗号、换行、空格分隔）
+				const nameList = text.trim().split(/[,，\n\s]+/).filter(name => name.trim());
+				if (nameList.length === 0) {
+					showToast('未识别到有效学生姓名', 'warning');
+					return;
+				}
+
+				const students = getStudents();
+				const existingNames = new Set(students.map(s => s.name.trim()));
+				const newNames = [];
+				const duplicateNames = [];
+
+				// 去重并检查重复
+				const uniqueNames = [...new Set(nameList)];
+				uniqueNames.forEach(name => {
+					const trimName = name.trim();
+					if (existingNames.has(trimName)) {
+						duplicateNames.push(trimName);
+					} else {
+						newNames.push(trimName);
+					}
+				});
+
+				// 添加新学生
+				if (newNames.length > 0) {
+					const newStudents = newNames.map(name => ({
+						name,
+						libraryCount: 0,
+						circulationCount: 0
+					}));
+					students.push(...newStudents);
+					saveStudents(students);
+				}
+
+				// 提示结果
+				let toastText = '';
+				if (newNames.length > 0 && duplicateNames.length > 0) {
+					toastText = `成功导入${newNames.length}名学生，${duplicateNames.length}名学生已存在`;
+				} else if (newNames.length > 0) {
+					toastText = `成功导入${newNames.length}名学生`;
+				} else {
+					toastText = '所有学生均已存在，未导入新学生';
+				}
+				showToast(toastText, newNames.length > 0 ? 'success' : 'info');
+			}
+
+			/**
+			 * 增加值班次数
+			 * @param {string} name 学生姓名
+			 * @param {string} type 类型：library/ circulation
+			 */
+			function addCount(name, type) {
+				const students = getStudents();
+				const student = students.find(s => s.name === name);
+				if (!student) {
+					showToast(`学生【${name}】不存在`, 'error');
+					return;
+				}
+
+				// 更新次数
+				student[`${type}Count`] = (student[`${type}Count`] || 0) + 1;
+				saveStudents(students);
+				const typeText = type === 'library' ? '书库班' : '流通班';
+				showToast(`【${name}】${typeText}次数+1`, 'success');
+			}
+
+			/**
+			 * 清零值班次数
+			 * @param {string} name 学生姓名
+			 * @param {string} type 类型：library/ circulation
+			 */
+			function clearCount(name, type) {
+				if (!confirm(`确定要清零【${name}】的${type === 'library' ? '书库班' : '流通班'}次数吗？`)) {
+					return;
+				}
+
+				const students = getStudents();
+				const student = students.find(s => s.name === name);
+				if (!student) {
+					showToast(`学生【${name}】不存在`, 'error');
+					return;
+				}
+
+				// 清零次数
+				student[`${type}Count`] = 0;
+				saveStudents(students);
+				const typeText = type === 'library' ? '书库班' : '流通班';
+				showToast(`已清零【${name}】的${typeText}次数`, 'success');
+			}
+
+			/**
+			 * 删除学生
+			 * @param {string} name 学生姓名
+			 */
+			function deleteStudent(name) {
+				if (!confirm(`确定要删除学生【${name}】的所有记录吗？`)) {
+					return;
+				}
+
+				let students = getStudents();
+				const beforeCount = students.length;
+				students = students.filter(student => student.name !== name);
+				saveStudents(students);
+
+				if (students.length < beforeCount) {
+					showToast(`已删除学生【${name}】的所有记录`, 'success');
+				} else {
+					showToast(`学生【${name}】不存在`, 'error');
+				}
+			}
+
+			// ===================== 4. 事件绑定 =====================
+			/**
+			 * 绑定学生列表按钮事件
+			 */
+			function bindStudentListEvents() {
+				// 添加书库班次数
+				document.querySelectorAll('.add-library').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						addCount(name, 'library');
+						refreshPage();
+					});
+				});
+
+				// 添加流通班次数
+				document.querySelectorAll('.add-circulation').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						addCount(name, 'circulation');
+						refreshPage();
+					});
+				});
+
+				// 清零书库班次数
+				document.querySelectorAll('.clear-library').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						clearCount(name, 'library');
+						refreshPage();
+					});
+				});
+
+				// 清零流通班次数
+				document.querySelectorAll('.clear-circulation').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						clearCount(name, 'circulation');
+						refreshPage();
+					});
+				});
+
+				// 删除学生
+				document.querySelectorAll('.delete-student').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						deleteStudent(name);
+						refreshPage();
+					});
+				});
+			}
+
+			/**
+			 * 初始化所有事件绑定
+			 */
+			function initEvents() {
+				// 模式按钮点击事件
+				document.getElementById('mode-both').addEventListener('click', () => switchShiftMode(SHIFT_MODE.BOTH));
+				document.getElementById('mode-only-library').addEventListener('click', () => switchShiftMode(SHIFT_MODE
+					.ONLY_LIBRARY));
+				document.getElementById('mode-only-circulation').addEventListener('click', () => switchShiftMode(SHIFT_MODE
+					.ONLY_CIRCULATION));
+
+				// 新增：学生列表折叠/展开按钮事件
+				document.getElementById('toggle-student-list-btn').addEventListener('click', toggleStudentList);
+
+				// 汇总显隐按钮点击事件
+				document.getElementById('toggle-summary-btn').addEventListener('click', toggleSummary);
+
+				// 添加单个学生
+				document.getElementById('add-student-btn').addEventListener('click', () => {
+					const name = document.getElementById('student-name').value;
+					if (addStudent(name)) {
+						document.getElementById('student-name').value = '';
+						refreshPage();
+					}
+				});
+
+				// 回车添加学生
+				document.getElementById('student-name').addEventListener('keydown', (e) => {
+					if (e.key === 'Enter') {
+						document.getElementById('add-student-btn').click();
+					}
+				});
+
+				// 打开批量导入模态框
+				document.getElementById('batch-import-btn').addEventListener('click', () => {
+					document.getElementById('batch-import-modal').classList.remove('hidden');
+					document.getElementById('batch-student-text').focus();
+				});
+
+				// 关闭批量导入模态框
+				document.getElementById('close-modal-btn').addEventListener('click', () => {
+					document.getElementById('batch-import-modal').classList.add('hidden');
+				});
+
+				// 取消批量导入
+				document.getElementById('cancel-import-btn').addEventListener('click', () => {
+					document.getElementById('batch-import-modal').classList.add('hidden');
+				});
+
+				// 确认批量导入
+				document.getElementById('confirm-import-btn').addEventListener('click', () => {
+					const text = document.getElementById('batch-student-text').value;
+					batchImportStudents(text);
+					document.getElementById('batch-import-modal').classList.add('hidden');
+					document.getElementById('batch-student-text').value = '';
+					refreshPage();
+				});
+
+				// 点击模态框外部关闭
+				document.getElementById('batch-import-modal').addEventListener('click', (e) => {
+					if (e.target === document.getElementById('batch-import-modal')) {
+						document.getElementById('batch-import-modal').classList.add('hidden');
+					}
+				});
+			}
+
+			// ===================== 5. 页面初始化 =====================
+			document.addEventListener('DOMContentLoaded', () => {
+				initEvents(); // 初始化事件绑定
+				refreshPage(); // 初始化页面数据
+			});
+		</script>
+	</body>
+</html>

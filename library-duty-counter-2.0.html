@@ -1,0 +1,700 @@
+<!-- 在第一版的基础上（library-duty-counter1.6）   进行模块的细化————单独书库，单独流通模式 -->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>图书馆勤工助学值班记录器</title>
+		<!-- Tailwind CSS CDN -->
+		<script src="https://cdn.tailwindcss.com"></script>
+		<!-- Font Awesome CDN -->
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+		<style>
+			/* 自定义样式 */
+			.mode-btn.active {
+				background-color: #2563eb !important;
+				color: white !important;
+			}
+
+			.hidden {
+				display: none !important;
+			}
+
+			#toast {
+				opacity: 0;
+				transition: opacity 0.3s ease;
+			}
+
+			#toast.show {
+				opacity: 0.9;
+			}
+
+			button:disabled {
+				cursor: not-allowed;
+				opacity: 0.5;
+			}
+
+			.student-item {
+				transition: all 0.2s ease;
+			}
+
+			.student-item:hover {
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+			}
+
+			.btn-group button {
+				transition: transform 0.1s ease;
+			}
+
+			.btn-group button:hover {
+				transform: scale(1.05);
+			}
+		</style>
+	</head>
+	<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+		<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md p-6 md:p-8">
+			<h1 class="text-2xl md:text-3xl font-bold text-center text-blue-700 mb-8">
+				<i class="fa-solid fa-book mr-2"></i>图书馆勤工助学值班记录器
+			</h1>
+
+			<!-- 模式切换按钮组 -->
+			<div class="shift-mode-group flex flex-wrap gap-2 mb-6">
+				<button id="mode-both"
+					class="mode-btn active px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all">
+					<i class="fa-solid fa-layer-group mr-1"></i>双班模式
+				</button>
+				<button id="mode-only-library"
+					class="mode-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all">
+					<i class="fa-solid fa-book-open mr-1"></i>仅书库模式
+				</button>
+				<button id="mode-only-circulation"
+					class="mode-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all">
+					<i class="fa-solid fa-arrows-rotate mr-1"></i>仅流通模式
+				</button>
+			</div>
+
+			<!-- 统计卡片 -->
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+				<div class="bg-blue-50 rounded-lg p-4 text-center">
+					<h3 class="text-gray-600 mb-2">书库班总次数</h3>
+					<p id="total-library" class="text-2xl font-bold text-blue-700">0</p>
+				</div>
+				<div class="bg-green-50 rounded-lg p-4 text-center">
+					<h3 class="text-gray-600 mb-2">流通班总次数</h3>
+					<p id="total-circulation" class="text-2xl font-bold text-green-700">0</p>
+				</div>
+				<div class="bg-purple-50 rounded-lg p-4 text-center">
+					<h3 class="text-gray-600 mb-2">参与学生总数</h3>
+					<p id="total-students" class="text-2xl font-bold text-purple-700">0</p>
+				</div>
+			</div>
+
+			<!-- 学生添加区 -->
+			<div class="bg-gray-50 rounded-lg p-4 mb-6">
+				<h3 class="font-semibold mb-3 text-gray-700"><i class="fa-solid fa-user-plus mr-1"></i>添加学生</h3>
+				<div class="flex flex-col md:flex-row gap-3">
+					<input type="text" id="student-name" placeholder="请输入学生姓名"
+						class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+					<button id="add-student-btn"
+						class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+						<i class="fa-solid fa-plus mr-1"></i>添加
+					</button>
+					<button id="batch-import-btn"
+						class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all">
+						<i class="fa-solid fa-file-import mr-1"></i>批量导入
+					</button>
+				</div>
+			</div>
+
+			<!-- 学生列表 -->
+			<div class="mb-6">
+				<h3 class="font-semibold mb-3 text-gray-700"><i class="fa-solid fa-list mr-1"></i>学生值班记录</h3>
+				<div id="student-list"
+					class="space-y-2 max-h-[300px] overflow-y-auto p-2 border border-gray-200 rounded-lg">
+					<!-- 学生条目动态渲染 -->
+					<div class="text-center text-gray-500 py-4">暂无学生数据，请添加学生</div>
+				</div>
+			</div>
+
+			<!-- 汇总表格 -->
+			<div class="mb-6">
+				<div class="flex justify-between items-center mb-3">
+					<h3 class="font-semibold text-gray-700"><i class="fa-solid fa-table mr-1"></i>值班汇总</h3>
+					<span class="text-sm text-gray-500">更新时间：<span id="table-update-time">--</span></span>
+				</div>
+				<div class="overflow-x-auto">
+					<table id="summary-table" class="w-full border-collapse">
+						<thead>
+							<tr class="bg-gray-100">
+								<th class="border border-gray-300 px-3 py-2 text-left">序号</th>
+								<th class="border border-gray-300 px-3 py-2 text-left">姓名</th>
+								<th class="border border-gray-300 px-3 py-2 text-left">书库班次数</th>
+								<th class="border border-gray-300 px-3 py-2 text-left">流通班次数</th>
+								<th class="border border-gray-300 px-3 py-2 text-left">总数</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td colspan="5" class="border border-gray-300 px-3 py-4 text-center text-gray-500">暂无数据
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- 批量导入模态框 -->
+		<div id="batch-import-modal"
+			class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+			<div class="bg-white rounded-lg p-6 w-full max-w-md">
+				<div class="flex justify-between items-center mb-4">
+					<h3 class="font-semibold text-lg">批量导入学生</h3>
+					<button id="close-modal-btn" class="text-gray-500 hover:text-gray-700">
+						<i class="fa-solid fa-xmark"></i>
+					</button>
+				</div>
+				<textarea id="batch-student-text" placeholder="请输入学生姓名，支持逗号、换行、空格分隔（例：张三,李四 王五
+赵六）" class="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+				<div class="flex justify-end gap-3">
+					<button id="cancel-import-btn"
+						class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all">取消</button>
+					<button id="confirm-import-btn"
+						class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">确认导入</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Toast提示容器 -->
+		<div id="toast"
+			class="fixed top-4 right-4 px-4 py-2 rounded-lg bg-gray-800 text-white pointer-events-none z-50">操作提示</div>
+
+		<script>
+			// ===================== 1. 全局常量与状态管理 =====================
+			const SHIFT_MODE = {
+				BOTH: 1, // 双班模式
+				ONLY_LIBRARY: 2, // 仅书库模式
+				ONLY_CIRCULATION: 3 // 仅流通模式
+			};
+			// 初始化当前模式（优先从localStorage读取，默认双班）
+			let currentShiftMode = Number(localStorage.getItem('shiftMode')) || SHIFT_MODE.BOTH;
+			// Toast定时器（防叠加）
+			let toastTimer = null;
+
+			// ===================== 2. 工具函数 =====================
+			/**
+			 * 显示Toast提示
+			 * @param {string} text 提示文本
+			 */
+			function showToast(text) {
+				const toastEl = document.getElementById('toast');
+				clearTimeout(toastTimer); // 清空旧定时器
+				toastEl.textContent = text;
+				toastEl.classList.add('show');
+				toastTimer = setTimeout(() => {
+					toastEl.classList.remove('show');
+				}, 2000);
+			}
+
+			/**
+			 * 更新模式按钮选中态
+			 */
+			function updateModeBtnStyle() {
+				const btns = {
+					[SHIFT_MODE.BOTH]: document.getElementById('mode-both'),
+					[SHIFT_MODE.ONLY_LIBRARY]: document.getElementById('mode-only-library'),
+					[SHIFT_MODE.ONLY_CIRCULATION]: document.getElementById('mode-only-circulation')
+				};
+				// 重置所有按钮样式
+				Object.values(btns).forEach(btn => btn.classList.remove('active'));
+				// 给当前模式按钮加选中态
+				btns[currentShiftMode].classList.add('active');
+			}
+
+			/**
+			 * 切换班次模式
+			 * @param {number} mode 目标模式
+			 */
+			function switchShiftMode(mode) {
+				currentShiftMode = mode;
+				// 持久化模式
+				localStorage.setItem('shiftMode', mode);
+				// 显示提示
+				const modeText = {
+					[SHIFT_MODE.BOTH]: '已切换为双班模式',
+					[SHIFT_MODE.ONLY_LIBRARY]: '已切换为仅书库模式',
+					[SHIFT_MODE.ONLY_CIRCULATION]: '已切换为仅流通模式'
+				};
+				showToast(modeText[mode]);
+				// 全局刷新页面
+				refreshPage();
+			}
+
+			/**
+			 * 全局刷新（统一更新所有适配内容）
+			 */
+			function refreshPage() {
+				updateTotalStats(); // 更新顶部统计
+				renderStudentList(); // 重新渲染学生列表（含按钮显隐）
+				renderSummaryTable(); // 重新渲染汇总表格（含列显隐+总数计算）
+				updateModeBtnStyle(); // 更新模式按钮选中态
+			}
+
+			// ===================== 3. 核心业务函数 =====================
+			/**
+			 * 获取所有学生数据
+			 * @returns {Array} 学生数组
+			 */
+			function getStudents() {
+				return JSON.parse(localStorage.getItem('libraryStudents')) || [];
+			}
+
+			/**
+			 * 保存学生数据到localStorage
+			 * @param {Array} students 学生数组
+			 */
+			function saveStudents(students) {
+				localStorage.setItem('libraryStudents', JSON.stringify(students));
+			}
+
+			/**
+			 * 更新顶部统计（适配模式显隐）
+			 */
+			function updateTotalStats() {
+				const students = getStudents();
+				// 计算总次数
+				const totalLibrary = students.reduce((sum, s) => sum + (s.libraryCount || 0), 0);
+				const totalCirculation = students.reduce((sum, s) => sum + (s.circulationCount || 0), 0);
+
+				// 根据模式控制统计项显隐
+				const libraryStatsEl = document.getElementById('total-library');
+				const circulationStatsEl = document.getElementById('total-circulation');
+
+				libraryStatsEl.classList.toggle('hidden', currentShiftMode === SHIFT_MODE.ONLY_CIRCULATION);
+				circulationStatsEl.classList.toggle('hidden', currentShiftMode === SHIFT_MODE.ONLY_LIBRARY);
+
+				// 更新数值
+				libraryStatsEl.textContent = totalLibrary;
+				circulationStatsEl.textContent = totalCirculation;
+				document.getElementById('total-students').textContent = students.length;
+			}
+
+			/**
+			 * 渲染学生条目
+			 * @param {Object} student 学生对象
+			 * @returns {string} 学生条目HTML
+			 */
+			function renderStudentItem(student) {
+				// 按钮显隐判断
+				const isShowLibrary = [SHIFT_MODE.BOTH, SHIFT_MODE.ONLY_LIBRARY].includes(currentShiftMode);
+				const isShowCirculation = [SHIFT_MODE.BOTH, SHIFT_MODE.ONLY_CIRCULATION].includes(currentShiftMode);
+
+				// 拼接按钮HTML（添加+清零，适配显隐+禁用）
+				const libraryBtns = isShowLibrary ?
+					`
+          <button class="add-library px-2 py-1 rounded bg-green-500 text-white hover:bg-green-600" data-name="${student.name}">
+            <i class="fa-solid fa-plus mr-1"></i>书库班
+          </button>
+          <button class="clear-library px-2 py-1 rounded bg-yellow-500 text-white hover:bg-yellow-600" data-name="${student.name}">
+            <i class="fa-solid fa-trash-can mr-1"></i>清零书库
+          </button>
+        ` :
+					`
+          <button class="add-library hidden" disabled data-name="${student.name}">+书库班</button>
+          <button class="clear-library hidden" disabled data-name="${student.name}">清零书库班</button>
+        `;
+
+				const circulationBtns = isShowCirculation ?
+					`
+          <button class="add-circulation px-2 py-1 rounded bg-green-500 text-white hover:bg-green-600" data-name="${student.name}">
+            <i class="fa-solid fa-plus mr-1"></i>流通班
+          </button>
+          <button class="clear-circulation px-2 py-1 rounded bg-yellow-500 text-white hover:bg-yellow-600" data-name="${student.name}">
+            <i class="fa-solid fa-trash-can mr-1"></i>清零流通
+          </button>
+        ` :
+					`
+          <button class="add-circulation hidden" disabled data-name="${student.name}">+流通班</button>
+          <button class="clear-circulation hidden" disabled data-name="${student.name}">清零流通班</button>
+        `;
+
+				// 学生条目HTML
+				return `
+        <div class="student-item p-3 border rounded-lg mb-2 flex justify-between items-center">
+          <span class="font-medium">${student.name}</span>
+          <div class="btn-group flex flex-wrap gap-2">
+            ${libraryBtns}
+            ${circulationBtns}
+            <button class="delete-student px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600" data-name="${student.name}">
+              <i class="fa-solid fa-user-minus mr-1"></i>删除
+            </button>
+          </div>
+        </div>
+      `;
+			}
+
+			/**
+			 * 渲染学生列表
+			 */
+			function renderStudentList() {
+				const students = getStudents();
+				const listEl = document.getElementById('student-list');
+
+				if (students.length === 0) {
+					listEl.innerHTML = '<div class="text-center text-gray-500 py-4">暂无学生数据，请添加学生</div>';
+					return;
+				}
+
+				let listHtml = '';
+				students.forEach(student => {
+					listHtml += renderStudentItem(student);
+				});
+				listEl.innerHTML = listHtml;
+
+				// 绑定学生列表按钮事件
+				bindStudentListEvents();
+			}
+
+			/**
+			 * 渲染汇总表格（适配列显隐+总数计算）
+			 */
+			function renderSummaryTable() {
+				const students = getStudents();
+				const tableEl = document.getElementById('summary-table');
+
+				// 渲染表头
+				let headerHtml = '<thead><tr class="bg-gray-100">';
+				headerHtml += '<th class="border border-gray-300 px-3 py-2 text-left">序号</th>';
+				headerHtml += '<th class="border border-gray-300 px-3 py-2 text-left">姓名</th>';
+				if (currentShiftMode !== SHIFT_MODE.ONLY_CIRCULATION) {
+					headerHtml += '<th class="border border-gray-300 px-3 py-2 text-left">书库班次数</th>';
+				}
+				if (currentShiftMode !== SHIFT_MODE.ONLY_LIBRARY) {
+					headerHtml += '<th class="border border-gray-300 px-3 py-2 text-left">流通班次数</th>';
+				}
+				headerHtml += '<th class="border border-gray-300 px-3 py-2 text-left">总数</th></tr></thead>';
+
+				// 渲染表格内容
+				let bodyHtml = '<tbody>';
+				let totalLibraryAll = 0;
+				let totalCirculationAll = 0;
+				let totalAll = 0;
+
+				if (students.length === 0) {
+					bodyHtml +=
+						`<tr><td colspan="${currentShiftMode === SHIFT_MODE.BOTH ? 5 : 4}" class="border border-gray-300 px-3 py-4 text-center text-gray-500">暂无数据</td></tr>`;
+				} else {
+					students.forEach((student, index) => {
+						const libCount = student.libraryCount || 0;
+						const cirCount = student.circulationCount || 0;
+						totalLibraryAll += libCount;
+						totalCirculationAll += cirCount;
+
+						// 单行总数（适配模式）
+						let rowTotal = 0;
+						bodyHtml += `<tr><td class="border border-gray-300 px-3 py-2">${index + 1}</td>`;
+						bodyHtml += `<td class="border border-gray-300 px-3 py-2">${student.name}</td>`;
+
+						if (currentShiftMode !== SHIFT_MODE.ONLY_CIRCULATION) {
+							bodyHtml += `<td class="border border-gray-300 px-3 py-2">${libCount}</td>`;
+							rowTotal += libCount;
+						}
+						if (currentShiftMode !== SHIFT_MODE.ONLY_LIBRARY) {
+							bodyHtml += `<td class="border border-gray-300 px-3 py-2">${cirCount}</td>`;
+							rowTotal += cirCount;
+						}
+
+						bodyHtml += `<td class="border border-gray-300 px-3 py-2">${rowTotal}</td></tr>`;
+						totalAll += rowTotal;
+					});
+
+					// 渲染总计行
+					bodyHtml += '<tr class="font-bold bg-gray-100">';
+					bodyHtml += '<td colspan="2" class="border border-gray-300 px-3 py-2">总计</td>';
+					if (currentShiftMode !== SHIFT_MODE.ONLY_CIRCULATION) {
+						bodyHtml += `<td class="border border-gray-300 px-3 py-2">${totalLibraryAll}</td>`;
+					}
+					if (currentShiftMode !== SHIFT_MODE.ONLY_LIBRARY) {
+						bodyHtml += `<td class="border border-gray-300 px-3 py-2">${totalCirculationAll}</td>`;
+					}
+					bodyHtml += `<td class="border border-gray-300 px-3 py-2">${totalAll}</td></tr>`;
+				}
+
+				bodyHtml += '</tbody>';
+				tableEl.innerHTML = headerHtml + bodyHtml;
+
+				// 更新表格更新时间
+				document.getElementById('table-update-time').textContent = new Date().toLocaleString();
+			}
+
+			/**
+			 * 添加单个学生
+			 * @param {string} name 学生姓名
+			 * @returns {boolean} 是否添加成功
+			 */
+			function addStudent(name) {
+				if (!name.trim()) {
+					showToast('请输入有效的学生姓名');
+					return false;
+				}
+
+				const students = getStudents();
+				// 检查是否已存在
+				const exists = students.some(student => student.name.trim() === name.trim());
+				if (exists) {
+					showToast(`学生【${name}】已存在`);
+					return false;
+				}
+
+				// 添加新学生
+				students.push({
+					name: name.trim(),
+					libraryCount: 0,
+					circulationCount: 0
+				});
+				saveStudents(students);
+				showToast(`成功添加学生【${name}】`);
+				return true;
+			}
+
+			/**
+			 * 批量导入学生
+			 * @param {string} text 批量文本
+			 */
+			function batchImportStudents(text) {
+				if (!text.trim()) {
+					showToast('请输入要导入的学生姓名');
+					return;
+				}
+
+				// 分割姓名（支持逗号、换行、空格分隔）
+				const nameList = text.trim().split(/[,，\n\s]+/).filter(name => name.trim());
+				if (nameList.length === 0) {
+					showToast('未识别到有效学生姓名');
+					return;
+				}
+
+				const students = getStudents();
+				const existingNames = new Set(students.map(s => s.name.trim()));
+				const newNames = [];
+				const duplicateNames = [];
+
+				// 去重并检查重复
+				const uniqueNames = [...new Set(nameList)];
+				uniqueNames.forEach(name => {
+					const trimName = name.trim();
+					if (existingNames.has(trimName)) {
+						duplicateNames.push(trimName);
+					} else {
+						newNames.push(trimName);
+					}
+				});
+
+				// 添加新学生
+				if (newNames.length > 0) {
+					const newStudents = newNames.map(name => ({
+						name,
+						libraryCount: 0,
+						circulationCount: 0
+					}));
+					students.push(...newStudents);
+					saveStudents(students);
+				}
+
+				// 提示结果
+				let toastText = '';
+				if (newNames.length > 0 && duplicateNames.length > 0) {
+					toastText = `成功导入${newNames.length}名学生，${duplicateNames.length}名学生已存在`;
+				} else if (newNames.length > 0) {
+					toastText = `成功导入${newNames.length}名学生`;
+				} else {
+					toastText = '所有学生均已存在，未导入新学生';
+				}
+				showToast(toastText);
+			}
+
+			/**
+			 * 增加值班次数
+			 * @param {string} name 学生姓名
+			 * @param {string} type 类型：library/ circulation
+			 */
+			function addCount(name, type) {
+				const students = getStudents();
+				const student = students.find(s => s.name === name);
+				if (!student) {
+					showToast(`学生【${name}】不存在`);
+					return;
+				}
+
+				// 更新次数
+				student[`${type}Count`] = (student[`${type}Count`] || 0) + 1;
+				saveStudents(students);
+				const typeText = type === 'library' ? '书库班' : '流通班';
+				showToast(`【${name}】${typeText}次数+1`);
+			}
+
+			/**
+			 * 清零值班次数
+			 * @param {string} name 学生姓名
+			 * @param {string} type 类型：library/ circulation
+			 */
+			function clearCount(name, type) {
+				if (!confirm(`确定要清零【${name}】的${type === 'library' ? '书库班' : '流通班'}次数吗？`)) {
+					return;
+				}
+
+				const students = getStudents();
+				const student = students.find(s => s.name === name);
+				if (!student) {
+					showToast(`学生【${name}】不存在`);
+					return;
+				}
+
+				// 清零次数
+				student[`${type}Count`] = 0;
+				saveStudents(students);
+				const typeText = type === 'library' ? '书库班' : '流通班';
+				showToast(`已清零【${name}】的${typeText}次数`);
+			}
+
+			/**
+			 * 删除学生
+			 * @param {string} name 学生姓名
+			 */
+			function deleteStudent(name) {
+				if (!confirm(`确定要删除学生【${name}】的所有记录吗？`)) {
+					return;
+				}
+
+				let students = getStudents();
+				const beforeCount = students.length;
+				students = students.filter(student => student.name !== name);
+				saveStudents(students);
+
+				if (students.length < beforeCount) {
+					showToast(`已删除学生【${name}】的所有记录`);
+				} else {
+					showToast(`学生【${name}】不存在`);
+				}
+			}
+
+			// ===================== 4. 事件绑定 =====================
+			/**
+			 * 绑定学生列表按钮事件
+			 */
+			function bindStudentListEvents() {
+				// 添加书库班次数
+				document.querySelectorAll('.add-library').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						addCount(name, 'library');
+						refreshPage();
+					});
+				});
+
+				// 添加流通班次数
+				document.querySelectorAll('.add-circulation').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						addCount(name, 'circulation');
+						refreshPage();
+					});
+				});
+
+				// 清零书库班次数
+				document.querySelectorAll('.clear-library').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						clearCount(name, 'library');
+						refreshPage();
+					});
+				});
+
+				// 清零流通班次数
+				document.querySelectorAll('.clear-circulation').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						clearCount(name, 'circulation');
+						refreshPage();
+					});
+				});
+
+				// 删除学生
+				document.querySelectorAll('.delete-student').forEach(btn => {
+					btn.addEventListener('click', () => {
+						const name = btn.dataset.name;
+						deleteStudent(name);
+						refreshPage();
+					});
+				});
+			}
+
+			/**
+			 * 初始化所有事件绑定
+			 */
+			function initEvents() {
+				// 模式按钮点击事件
+				document.getElementById('mode-both').addEventListener('click', () => switchShiftMode(SHIFT_MODE.BOTH));
+				document.getElementById('mode-only-library').addEventListener('click', () => switchShiftMode(SHIFT_MODE
+					.ONLY_LIBRARY));
+				document.getElementById('mode-only-circulation').addEventListener('click', () => switchShiftMode(SHIFT_MODE
+					.ONLY_CIRCULATION));
+
+				// 添加单个学生
+				document.getElementById('add-student-btn').addEventListener('click', () => {
+					const name = document.getElementById('student-name').value;
+					if (addStudent(name)) {
+						document.getElementById('student-name').value = '';
+						refreshPage();
+					}
+				});
+
+				// 回车添加学生
+				document.getElementById('student-name').addEventListener('keydown', (e) => {
+					if (e.key === 'Enter') {
+						document.getElementById('add-student-btn').click();
+					}
+				});
+
+				// 打开批量导入模态框
+				document.getElementById('batch-import-btn').addEventListener('click', () => {
+					document.getElementById('batch-import-modal').classList.remove('hidden');
+					document.getElementById('batch-student-text').focus();
+				});
+
+				// 关闭批量导入模态框
+				document.getElementById('close-modal-btn').addEventListener('click', () => {
+					document.getElementById('batch-import-modal').classList.add('hidden');
+				});
+
+				// 取消批量导入
+				document.getElementById('cancel-import-btn').addEventListener('click', () => {
+					document.getElementById('batch-import-modal').classList.add('hidden');
+				});
+
+				// 确认批量导入
+				document.getElementById('confirm-import-btn').addEventListener('click', () => {
+					const text = document.getElementById('batch-student-text').value;
+					batchImportStudents(text);
+					document.getElementById('batch-import-modal').classList.add('hidden');
+					document.getElementById('batch-student-text').value = '';
+					refreshPage();
+				});
+
+				// 点击模态框外部关闭
+				document.getElementById('batch-import-modal').addEventListener('click', (e) => {
+					if (e.target === document.getElementById('batch-import-modal')) {
+						document.getElementById('batch-import-modal').classList.add('hidden');
+					}
+				});
+			}
+
+			// ===================== 5. 页面初始化 =====================
+			document.addEventListener('DOMContentLoaded', () => {
+				initEvents(); // 初始化事件绑定
+				refreshPage(); // 初始化页面数据
+			});
+		</script>
+	</body>
+</html>

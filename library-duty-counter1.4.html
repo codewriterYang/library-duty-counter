@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图书馆勤工助学值班记录器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#4080FF',
+                        library: '#3B82F6',    // 书库班颜色
+                        circulation: '#10B981', // 流通班颜色
+                        clear: '#F97316',       // 清零按钮颜色
+                        delete: '#EF4444',      // 删除按钮颜色
+                        neutral: '#F8FAFC',
+                        card: '#FFFFFF',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
+                        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .bg-gradient-soft {
+                background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%);
+            }
+            .card-effect {
+                transition: all 0.3s ease;
+            }
+            .card-effect:hover {
+                transform: translateY(-3px);
+            }
+            .student-item {
+                transition: all 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-soft min-h-screen font-sans text-gray-800">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 标题区域 -->
+        <header class="text-center mb-10 mt-4">
+            <div class="inline-block bg-primary/10 rounded-full p-3 mb-4">
+                <i class="fa fa-book text-primary text-3xl"></i>
+            </div>
+            <h1 class="text-[clamp(1.8rem,5vw,2.5rem)] font-bold text-gray-800 mb-2 tracking-tight">图书馆勤工助学值班记录</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">便捷记录和管理学生在书库班和流通班的值班次数，数据自动保存在本地</p>
+        </header>
+
+        <!-- 添加人员区域 -->
+        <div class="bg-card rounded-xl shadow-card p-6 mb-8 card-effect">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                <i class="fa fa-user-plus text-primary mr-2"></i>添加勤工助学学生
+            </h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="newPerson" placeholder="输入学生姓名" class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300 text-base shadow-sm">
+                <button id="addBtn" class="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium flex items-center justify-center transition-all-300 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg">
+                    <i class="fa fa-plus mr-2"></i>添加学生
+                </button>
+            </div>
+        </div>
+
+        <!-- 操作按钮区域 -->
+        <div class="flex justify-end mb-6">
+            <button id="showSummaryBtn" class="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center transition-all-300 transform hover:scale-105 active:scale-95 shadow-md">
+                <i class="fa fa-list mr-2"></i>显示全部记录
+            </button>
+        </div>
+
+        <!-- 汇总记录区域（默认隐藏） -->
+        <div id="summaryArea" class="bg-card rounded-xl shadow-card p-6 mb-8 hidden card-effect">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
+                <h2 class="text-lg font-semibold text-gray-700 flex items-center">
+                    <i class="fa fa-table text-primary mr-2"></i>值班记录汇总
+                </h2>
+                <span id="summaryDate" class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full"></span>
+            </div>
+            
+            <div class="overflow-x-auto rounded-lg border border-gray-100">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">序号</th>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生姓名</th>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">书库班数</th>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">流通班数</th>
+                            <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">总次数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- 汇总内容将通过JS动态生成 -->
+                    </tbody>
+                    <tfoot class="bg-gray-50">
+                        <tr>
+                            <td class="py-3 px-6 text-sm font-bold" colspan="2">总计</td>
+                            <td class="py-3 px-6 text-sm font-bold text-library" id="summaryTotalLibrary"></td>
+                            <td class="py-3 px-6 text-sm font-bold text-circulation" id="summaryTotalCirculation"></td>
+                            <td class="py-3 px-6 text-sm font-bold text-primary" id="summaryTotalAll"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- 人员列表区域 -->
+        <div class="bg-card rounded-xl shadow-card p-6 mb-8 card-effect">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                <i class="fa fa-list-alt text-primary mr-2"></i>学生值班列表
+                <span class="ml-2 text-sm text-gray-500">(点击刷新图标可清零对应班次)</span>
+            </h2>
+            <div id="personList" class="space-y-4">
+                <!-- 人员记录将通过JavaScript动态添加 -->
+                <div class="text-gray-500 text-center py-12" id="emptyState">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                        <i class="fa fa-info-circle text-2xl opacity-30"></i>
+                    </div>
+                    <p class="mb-2">还没有添加学生</p>
+                    <p class="text-sm text-gray-400">请使用上方表单添加勤工助学学生</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 总计统计区域 -->
+        <div class="bg-card rounded-xl shadow-card p-6 card-effect">
+            <h2 class="text-lg font-semibold text-gray-700 mb-5 flex items-center">
+                <i class="fa fa-bar-chart text-primary mr-2"></i>值班统计
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="bg-neutral p-5 rounded-lg border border-gray-100">
+                    <p class="text-gray-500 text-sm mb-1">书库班总次数</p>
+                    <p class="text-3xl font-bold text-library" id="totalLibraryDuties">0</p>
+                </div>
+                <div class="bg-neutral p-5 rounded-lg border border-gray-100">
+                    <p class="text-gray-500 text-sm mb-1">流通班总次数</p>
+                    <p class="text-3xl font-bold text-circulation" id="totalCirculationDuties">0</p>
+                </div>
+                <div class="bg-neutral p-5 rounded-lg border border-gray-100">
+                    <p class="text-gray-500 text-sm mb-1">参与学生总数</p>
+                    <p class="text-3xl font-bold text-gray-800" id="totalPeople">0</p>
+                </div>
+            </div>
+            <button id="resetBtn" class="mt-5 text-red-500 hover:text-red-700 text-sm font-medium flex items-center transition-all-300 hover:pl-1">
+                <i class="fa fa-refresh mr-1"></i> 重置所有记录
+            </button>
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="mt-10 text-center text-gray-500 text-sm pb-6">
+            <p>数据自动保存在本地，刷新页面不会丢失</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化数据 - 每个人包含书库班和流通班两种计数
+        let students = JSON.parse(localStorage.getItem('libraryStudents')) || [];
+        
+        // DOM元素
+        const personList = document.getElementById('personList');
+        const newPersonInput = document.getElementById('newPerson');
+        const addBtn = document.getElementById('addBtn');
+        const showSummaryBtn = document.getElementById('showSummaryBtn');
+        const summaryArea = document.getElementById('summaryArea');
+        const summaryTableBody = document.getElementById('summaryTableBody');
+        const summaryDate = document.getElementById('summaryDate');
+        const summaryTotalLibrary = document.getElementById('summaryTotalLibrary');
+        const summaryTotalCirculation = document.getElementById('summaryTotalCirculation');
+        const summaryTotalAll = document.getElementById('summaryTotalAll');
+        const totalLibraryEl = document.getElementById('totalLibraryDuties');
+        const totalCirculationEl = document.getElementById('totalCirculationDuties');
+        const totalPeopleEl = document.getElementById('totalPeople');
+        const emptyState = document.getElementById('emptyState');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 渲染学生列表
+        function renderStudents() {
+            // 清空列表
+            personList.innerHTML = '';
+            
+            // 检查是否有学生数据
+            if (students.length === 0) {
+                personList.appendChild(emptyState);
+            } else {
+                // 添加所有学生
+                students.forEach((student, index) => {
+                    const studentEl = document.createElement('div');
+                    // 添加唯一类名便于选择
+                    studentEl.className = 'student-item flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-all-300';
+                    studentEl.innerHTML = `
+                        <div class="flex items-center mb-3 sm:mb-0">
+                            <div class="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center mr-3">
+                                <i class="fa fa-user"></i>
+                            </div>
+                            <span class="font-medium text-gray-800">${student.name}</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                            <!-- 书库班操作区 -->
+                            <div class="flex items-center">
+                                <span class="text-sm text-gray-600 mr-2">书库班:</span>
+                                <span class="bg-library/10 text-library px-3 py-1.5 rounded-full font-semibold min-w-[40px] text-center library-count">
+                                    ${student.libraryDuty}
+                                </span>
+                                <button class="increment-library bg-library hover:bg-library/90 text-white p-2 rounded-full ml-2 transition-all-300 transform hover:scale-110 active:scale-95 shadow-sm" data-index="${index}">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                                <button class="clear-duty-btn bg-clear/10 text-clear hover:bg-clear/20 p-2 rounded-full ml-2 transition-all-300 shadow-sm" 
+                                        data-index="${index}" data-type="library" title="清零书库班次数">
+                                    <i class="fa fa-refresh"></i>
+                                </button>
+                            </div>
+                            <!-- 流通班操作区 -->
+                            <div class="flex items-center">
+                                <span class="text-sm text-gray-600 mr-2">流通班:</span>
+                                <span class="bg-circulation/10 text-circulation px-3 py-1.5 rounded-full font-semibold min-w-[40px] text-center circulation-count">
+                                    ${student.circulationDuty}
+                                </span>
+                                <button class="increment-circulation bg-circulation hover:bg-circulation/90 text-white p-2 rounded-full ml-2 transition-all-300 transform hover:scale-110 active:scale-95 shadow-sm" data-index="${index}">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                                <button class="clear-duty-btn bg-clear/10 text-clear hover:bg-clear/20 p-2 rounded-full ml-2 transition-all-300 shadow-sm" 
+                                        data-index="${index}" data-type="circulation" title="清零流通班次数">
+                                    <i class="fa fa-refresh"></i>
+                                </button>
+                            </div>
+                            <!-- 删除按钮 -->
+                            <button class="delete-btn bg-delete/10 text-delete hover:bg-delete/20 px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all-300 shadow-sm" 
+                                    data-index="${index}" title="删除该学生所有记录">
+                                <i class="fa fa-trash"></i>
+                                <span>删除</span>
+                            </button>
+                        </div>
+                    `;
+                    personList.appendChild(studentEl);
+                });
+
+                // 绑定所有事件监听器
+                bindEventListeners();
+            }
+
+            // 更新统计信息
+            updateStats();
+            
+            // 保存数据到本地存储
+            saveData();
+        }
+
+        // 绑定所有交互事件
+        function bindEventListeners() {
+            // 移除旧的事件监听器（防止重复绑定）
+            document.querySelectorAll('.increment-library').forEach(btn => {
+                btn.removeEventListener('click', handleLibraryIncrement);
+                btn.addEventListener('click', handleLibraryIncrement);
+            });
+
+            document.querySelectorAll('.increment-circulation').forEach(btn => {
+                btn.removeEventListener('click', handleCirculationIncrement);
+                btn.addEventListener('click', handleCirculationIncrement);
+            });
+
+            // 班次清零按钮事件绑定
+            document.querySelectorAll('.clear-duty-btn').forEach(btn => {
+                btn.removeEventListener('click', handleClearDuty);
+                btn.addEventListener('click', handleClearDuty);
+            });
+
+            // 修复删除按钮事件绑定
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                // 先移除可能存在的旧事件
+                btn.removeEventListener('click', handleDelete);
+                // 添加新事件
+                btn.addEventListener('click', handleDelete);
+            });
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const totalLibrary = students.reduce((sum, student) => sum + student.libraryDuty, 0);
+            const totalCirculation = students.reduce((sum, student) => sum + student.circulationDuty, 0);
+            
+            // 添加数字变化动画
+            animateValue(totalLibraryEl, parseInt(totalLibraryEl.textContent), totalLibrary, 300);
+            animateValue(totalCirculationEl, parseInt(totalCirculationEl.textContent), totalCirculation, 300);
+            totalPeopleEl.textContent = students.length;
+        }
+
+        // 数字变化动画
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                element.textContent = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // 保存数据到本地存储
+        function saveData() {
+            localStorage.setItem('libraryStudents', JSON.stringify(students));
+        }
+
+        // 处理增加书库班次数
+        function handleLibraryIncrement(e) {
+            e.stopPropagation();
+            const index = parseInt(e.currentTarget.dataset.index);
+            students[index].libraryDuty++;
+            
+            // 数字变化动画
+            const countEl = e.currentTarget.previousElementSibling;
+            countEl.classList.add('scale-125', 'font-bold');
+            setTimeout(() => countEl.classList.remove('scale-125', 'font-bold'), 300);
+            
+            renderStudents();
+        }
+
+        // 处理增加流通班次数
+        function handleCirculationIncrement(e) {
+            e.stopPropagation();
+            const index = parseInt(e.currentTarget.dataset.index);
+            students[index].circulationDuty++;
+            
+            // 数字变化动画
+            const countEl = e.currentTarget.previousElementSibling;
+            countEl.classList.add('scale-125', 'font-bold');
+            setTimeout(() => countEl.classList.remove('scale-125', 'font-bold'), 300);
+            
+            renderStudents();
+        }
+
+        // 处理班次清零
+        function handleClearDuty(e) {
+            e.stopPropagation();
+            const index = parseInt(e.currentTarget.dataset.index);
+            const dutyType = e.currentTarget.dataset.type; // 'library' 或 'circulation'
+            
+            // 二次确认（避免误操作）
+            const dutyName = dutyType === 'library' ? '书库班' : '流通班';
+            if (!confirm(`确定要清零${students[index].name}的${dutyName}次数吗？`)) {
+                return;
+            }
+            
+            // 清零对应班次
+            if (dutyType === 'library') {
+                students[index].libraryDuty = 0;
+            } else {
+                students[index].circulationDuty = 0;
+            }
+            
+            // 清零动画反馈
+            const countEl = e.currentTarget.parentElement.querySelector(`.${dutyType}-count`);
+            countEl.classList.add('scale-90', 'text-clear');
+            setTimeout(() => countEl.classList.remove('scale-90', 'text-clear'), 300);
+            
+            renderStudents();
+        }
+
+        // 处理删除学生（已修复）
+        function handleDelete(e) {
+            e.stopPropagation();
+            // 获取索引
+            const index = parseInt(e.currentTarget.dataset.index);
+            if (isNaN(index) || index < 0 || index >= students.length) {
+                console.error('无效的学生索引:', index);
+                return;
+            }
+            
+            if (confirm(`确定要删除${students[index].name}的所有值班记录吗？`)) {
+                // 使用更可靠的方式获取学生元素
+                const studentEl = e.currentTarget.closest('.student-item');
+                if (studentEl) {
+                    // 添加删除动画
+                    studentEl.classList.add('opacity-0', 'scale-95', 'transition-all-300');
+                }
+                
+                // 执行删除操作
+                setTimeout(() => {
+                    students.splice(index, 1);
+                    renderStudents();
+                }, 300);
+            }
+        }
+
+        // 添加新学生
+        function addStudent() {
+            const name = newPersonInput.value.trim();
+            if (name) {
+                // 检查是否已存在该学生
+                const exists = students.some(student => student.name === name);
+                if (exists) {
+                    alert('该学生已存在！');
+                    return;
+                }
+                
+                // 新学生初始两种班次都是0次
+                students.push({ 
+                    name, 
+                    libraryDuty: 0,  // 书库班次数
+                    circulationDuty: 0  // 流通班次数
+                });
+                
+                // 添加成功动画
+                newPersonInput.value = '';
+                newPersonInput.classList.add('border-green-500');
+                setTimeout(() => newPersonInput.classList.remove('border-green-500'), 1000);
+                
+                renderStudents();
+                newPersonInput.focus(); // 保持输入焦点
+            } else {
+                // 输入为空提示
+                newPersonInput.classList.add('border-red-300');
+                setTimeout(() => newPersonInput.classList.remove('border-red-300'), 1000);
+                alert('请输入学生姓名！');
+            }
+        }
+
+        // 重置所有记录
+        function resetAll() {
+            if (students.length > 0 && confirm('确定要重置所有记录吗？这将清除所有学生及值班数据！')) {
+                // 添加淡出动画
+                const studentElements = document.querySelectorAll('.student-item');
+                studentElements.forEach((el, i) => {
+                    setTimeout(() => {
+                        el.classList.add('opacity-0', 'scale-95');
+                        if (i === studentElements.length - 1) {
+                            setTimeout(() => {
+                                students = [];
+                                renderStudents();
+                                // 隐藏汇总区域（如果显示）
+                                if (!summaryArea.classList.contains('hidden')) {
+                                    toggleSummary();
+                                }
+                            }, 300);
+                        }
+                    }, i * 100);
+                });
+            }
+        }
+
+        // 切换汇总区域显示/隐藏
+        function toggleSummary() {
+            if (students.length === 0) {
+                alert('没有可显示的值班记录，请先添加学生并记录值班次数');
+                return;
+            }
+            
+            // 切换显示状态并添加动画
+            if (summaryArea.classList.contains('hidden')) {
+                summaryArea.classList.remove('hidden');
+                summaryArea.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    summaryArea.classList.remove('opacity-0', 'scale-95');
+                    summaryArea.classList.add('opacity-100', 'scale-100', 'transition-all-300');
+                }, 10);
+            } else {
+                summaryArea.classList.remove('opacity-100', 'scale-100');
+                summaryArea.classList.add('opacity-0', 'scale-95', 'transition-all-300');
+                setTimeout(() => {
+                    summaryArea.classList.add('hidden');
+                }, 300);
+            }
+            
+            // 显示时更新汇总内容
+            if (!summaryArea.classList.contains('hidden')) {
+                updateSummary();
+                // 平滑滚动到汇总区域
+                summaryArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // 更新汇总内容
+        function updateSummary() {
+            // 设置汇总日期
+            const now = new Date();
+            const formattedDate = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            summaryDate.textContent = `更新时间: ${formattedDate}`;
+            
+            // 填充汇总表格
+            summaryTableBody.innerHTML = '';
+            students.forEach((student, index) => {
+                const total = student.libraryDuty + student.circulationDuty;
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-all-300';
+                row.innerHTML = `
+                    <td class="py-4 px-6 whitespace-nowrap">${index + 1}</td>
+                    <td class="py-4 px-6 whitespace-nowrap">${student.name}</td>
+                    <td class="py-4 px-6 whitespace-nowrap text-library">${student.libraryDuty}</td>
+                    <td class="py-4 px-6 whitespace-nowrap text-circulation">${student.circulationDuty}</td>
+                    <td class="py-4 px-6 whitespace-nowrap font-medium">${total}</td>
+                `;
+                summaryTableBody.appendChild(row);
+            });
+            
+            // 计算总计
+            const totalLibrary = students.reduce((sum, student) => sum + student.libraryDuty, 0);
+            const totalCirculation = students.reduce((sum, student) => sum + student.circulationDuty, 0);
+            const totalAll = totalLibrary + totalCirculation;
+            
+            summaryTotalLibrary.textContent = totalLibrary;
+            summaryTotalCirculation.textContent = totalCirculation;
+            summaryTotalAll.textContent = totalAll;
+        }
+
+        // 初始化事件监听
+        function initEventListeners() {
+            addBtn.addEventListener('click', addStudent);
+            newPersonInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addStudent();
+                }
+            });
+            resetBtn.addEventListener('click', resetAll);
+            showSummaryBtn.addEventListener('click', toggleSummary);
+        }
+
+        // 初始执行
+        initEventListeners();
+        renderStudents();
+    </script>
+</body>
+</html>
