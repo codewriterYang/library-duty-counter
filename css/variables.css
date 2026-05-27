@@ -1,0 +1,188 @@
+/**
+ * CSS Variables & Theme System
+ * 
+ * 本文件定义所有CSS变量和主题配色方案
+ * 三种模式：双班模式(both)、书库模式(library)、流通模式(circulation)
+ * 
+ * 使用方式：在HTML元素上设置 data-theme 属性即可切换主题
+ * 示例：<html data-theme="library">
+ */
+
+:root {
+  /* 兼容性回退变量 - 确保旧版浏览器正常显示 */
+  --primary: #6366F1;
+  --primary-hover: #4F46E5;
+  --secondary: #4338CA;
+  --secondary-hover: #3730A3;
+  --accent: #A5B4FC;
+  --accent-light: #E0E7FF;
+  --bg-primary: #F5F3FF;
+  --bg-secondary: #EDE9FE;
+  --bg-card: #FFFFFF;
+  --text-primary: #1E1B4B;
+  --text-secondary: #4338CA;
+  --text-muted: #6B7280;
+  --border: #C4B5FD;
+  --border-light: #EDE9FE;
+  --success: #0D9488;
+  --success-hover: #0F766E;
+  --success-light: #CCFBF1;
+  --warning: #F59E0B;
+  --warning-hover: #D97706;
+  --warning-light: #FEF3C7;
+  --danger: #EF4444;
+  --danger-hover: #DC2626;
+  --danger-light: #FEE2E2;
+  --gray-light: #F9FAFB;
+  --gray-border: #E5E7EB;
+  --gray-bg: #F5F5F5;
+  --gray-text: #6B7280;
+  --gray-dark: #374151;
+}
+
+/* 书库主题 - Klein Blue 深邃蓝色调
+   传达稳重、专业、知识的氛围，适合图书馆场景 */
+:root[data-theme="library"] {
+  /* 主题变量 */
+  --theme-primary: #002FA7;
+  --theme-primary-hover: #001F75;
+  --theme-primary-light: #4472D4;
+  --theme-secondary: #1E40AF;
+  --theme-secondary-hover: #1E3A8A;
+  --theme-accent: #3B82F6;
+  --theme-accent-light: #DBEAFE;
+  --theme-bg-primary: #EEF2FF;
+  --theme-bg-secondary: #E0E7FF;
+  --theme-bg-card: #FFFFFF;
+  --theme-text-primary: #1E3A5F;
+  --theme-text-secondary: #4338CA;
+  --theme-text-muted: #6B7280;
+  --theme-border: #C7D2FE;
+  --theme-border-light: #E0E7FF;
+  --theme-success: #0D9488;
+  --theme-success-hover: #0F766E;
+  --theme-success-light: #CCFBF1;
+  --theme-warning: #F59E0B;
+  --theme-warning-hover: #D97706;
+  --theme-warning-light: #FEF3C7;
+  --theme-danger: #EF4444;
+  --theme-danger-hover: #DC2626;
+  --theme-danger-light: #FEE2E2;
+  
+  /* 覆盖基础变量 - 使主题生效 */
+  --primary: #002FA7;
+  --primary-hover: #001F75;
+  --secondary: #1E40AF;
+  --secondary-hover: #1E3A8A;
+  --accent: #3B82F6;
+  --accent-light: #DBEAFE;
+  --bg-primary: #EEF2FF;
+  --bg-secondary: #E0E7FF;
+  --bg-card: #FFFFFF;
+  --text-primary: #1E3A5F;
+  --text-secondary: #4338CA;
+  --text-muted: #6B7280;
+  --border: #C7D2FE;
+  --border-light: #E0E7FF;
+  --success: #0D9488;
+  --success-hover: #0F766E;
+  --success-light: #CCFBF1;
+}
+
+/* 流通主题 - 清新翠绿动态色调
+   传达活力、流转、流通的氛围，体现动态交互特性 */
+:root[data-theme="circulation"] {
+  /* 主题变量 */
+  --theme-primary: #10B981;
+  --theme-primary-hover: #059669;
+  --theme-primary-light: #34D399;
+  --theme-secondary: #047857;
+  --theme-secondary-hover: #065F46;
+  --theme-accent: #6EE7B7;
+  --theme-accent-light: #D1FAE5;
+  --theme-bg-primary: #ECFDF5;
+  --theme-bg-secondary: #D1FAE5;
+  --theme-bg-card: #FFFFFF;
+  --theme-text-primary: #064E3B;
+  --theme-text-secondary: #047857;
+  --theme-text-muted: #64748B;
+  --theme-border: #A7F3D0;
+  --theme-border-light: #D1FAE5;
+  --theme-success: #10B981;
+  --theme-success-hover: #059669;
+  --theme-success-light: #D1FAE5;
+  --theme-warning: #F59E0B;
+  --theme-warning-hover: #D97706;
+  --theme-warning-light: #FEF3C7;
+  --theme-danger: #EF4444;
+  --theme-danger-hover: #DC2626;
+  --theme-danger-light: #FEE2E2;
+  
+  /* 覆盖基础变量 - 使主题生效 */
+  --primary: #10B981;
+  --primary-hover: #059669;
+  --secondary: #047857;
+  --secondary-hover: #065F46;
+  --accent: #6EE7B7;
+  --accent-light: #D1FAE5;
+  --bg-primary: #ECFDF5;
+  --bg-secondary: #D1FAE5;
+  --bg-card: #FFFFFF;
+  --text-primary: #064E3B;
+  --text-secondary: #047857;
+  --text-muted: #64748B;
+  --border: #A7F3D0;
+  --border-light: #D1FAE5;
+  --success: #10B981;
+  --success-hover: #059669;
+  --success-light: #D1FAE5;
+}
+
+/* 双班模式主题 - 融合蓝紫协调色调
+   体现双班融合、平衡、统一的氛围 */
+:root[data-theme="both"], :root {
+  /* 主题变量 */
+  --theme-primary: #6366F1;
+  --theme-primary-hover: #4F46E5;
+  --theme-primary-light: #818CF8;
+  --theme-secondary: #4338CA;
+  --theme-secondary-hover: #3730A3;
+  --theme-accent: #A5B4FC;
+  --theme-accent-light: #E0E7FF;
+  --theme-bg-primary: #F5F3FF;
+  --theme-bg-secondary: #EDE9FE;
+  --theme-bg-card: #FFFFFF;
+  --theme-text-primary: #1E1B4B;
+  --theme-text-secondary: #4338CA;
+  --theme-text-muted: #6B7280;
+  --theme-border: #C4B5FD;
+  --theme-border-light: #EDE9FE;
+  --theme-success: #0D9488;
+  --theme-success-hover: #0F766E;
+  --theme-success-light: #CCFBF1;
+  --theme-warning: #F59E0B;
+  --theme-warning-hover: #D97706;
+  --theme-warning-light: #FEF3C7;
+  --theme-danger: #EF4444;
+  --theme-danger-hover: #DC2626;
+  --theme-danger-light: #FEE2E2;
+  
+  /* 覆盖基础变量 - 使主题生效 */
+  --primary: #6366F1;
+  --primary-hover: #4F46E5;
+  --secondary: #4338CA;
+  --secondary-hover: #3730A3;
+  --accent: #A5B4FC;
+  --accent-light: #E0E7FF;
+  --bg-primary: #F5F3FF;
+  --bg-secondary: #EDE9FE;
+  --bg-card: #FFFFFF;
+  --text-primary: #1E1B4B;
+  --text-secondary: #4338CA;
+  --text-muted: #6B7280;
+  --border: #C4B5FD;
+  --border-light: #EDE9FE;
+  --success: #0D9488;
+  --success-hover: #0F766E;
+  --success-light: #CCFBF1;
+}

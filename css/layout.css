@@ -1,0 +1,55 @@
+/**
+ * Layout & Animation Styles
+ * 
+ * 本文件包含布局和动画相关样式
+ * - 汇总容器
+ * - 学生列表容器
+ * - 动画效果
+ */
+
+/* ========== 汇总容器 ========== */
+.summary-container {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+.summary-container.show {
+  max-height: 5000px;
+  opacity: 1;
+}
+
+/* 完整显示模式下容器高度不受限制 */
+.summary-container.show #summary-wrapper.full {
+  max-height: none;
+  overflow: visible;
+}
+
+/* ========== 学生列表容器 ========== */
+.student-list-container {
+  transition: all 0.3s ease-in-out;
+  opacity: 1;
+  height: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.student-list-container.collapsed {
+  height: 60px !important;
+  opacity: 0.8;
+  overflow: hidden;
+  display: block;
+}
+
+.student-list-collapse-tip {
+  display: none;
+  text-align: center;
+  padding: 1rem;
+  color: var(--gray-text);
+}
+
+.student-list-container.collapsed .student-list-collapse-tip {
+  display: block;
+}

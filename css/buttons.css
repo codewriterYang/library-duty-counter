@@ -1,0 +1,257 @@
+/**
+ * Button Styles
+ * 
+ * 本文件包含所有按钮样式
+ * - 通用按钮 (.btn-custom)
+ * - 主要按钮 (.btn-primary)
+ * - 成功按钮 (.btn-success)
+ * - 警告按钮 (.btn-warning)
+ * - 危险按钮 (.btn-danger)
+ * - 轮廓按钮 (.btn-outline)
+ * - 模式按钮 (.mode-btn)
+ * - 表格模式按钮 (.table-mode-btn)
+ * - 操作按钮 (书库、流通、清零、删除)
+ */
+
+/* ========== 通用按钮基础样式 ========== */
+.btn-custom {
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-custom:hover {
+  transform: translateY(-1px);
+}
+
+.btn-custom:active {
+  transform: translateY(0);
+}
+
+.btn-custom:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========== 主题按钮 ========== */
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-success {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: var(--success-hover);
+}
+
+.btn-warning {
+  background-color: var(--warning);
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: var(--warning-hover);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--danger-hover);
+}
+
+.btn-outline {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.btn-outline:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--primary);
+}
+
+/* ========== 模式切换按钮 ========== */
+.mode-btn {
+  transition: all 0.2s ease;
+  border: 2px solid var(--border);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.mode-btn:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--primary);
+}
+
+.mode-btn.active {
+  background-color: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px var(--primary);
+  border: 2px solid var(--primary);
+}
+
+/* ========== 表格模式切换按钮 ========== */
+.table-mode-btn {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+}
+
+.table-mode-btn:hover {
+  background-color: var(--bg-secondary);
+}
+
+.table-mode-btn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* ========== 书库模块专属按钮 ========== */
+.btn-add-library {
+  background-color: var(--accent-light);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-add-library:hover {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-add-library:active {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* ========== 流通模块专属按钮 ========== */
+.btn-add-circulation {
+  background-color: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-add-circulation:hover {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn-add-circulation:active {
+  background-color: var(--success);
+  color: white;
+}
+
+/* ========== 清零按钮 ========== */
+.btn-clear {
+  background-color: var(--bg-card);
+  color: var(--warning);
+  border: 1px solid var(--warning-light);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-clear:hover {
+  background-color: var(--warning-light);
+}
+
+.btn-clear:active {
+  background-color: var(--warning);
+  color: white;
+}
+
+/* ========== 删除按钮 ========== */
+.btn-delete {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+
+.btn-delete:hover {
+  background-color: var(--danger);
+  color: white;
+  transform: scale(1.02);
+}
+
+.btn-delete:active {
+  transform: rotate(0deg) scale(1);
+}
+
+/* ========== 全部重置按钮 ========== */
+.reset-all-btn {
+  position: relative;
+}
+
+.reset-all-btn .tooltip {
+  position: absolute;
+  bottom: -1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--gray-dark);
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.reset-all-btn:hover .tooltip {
+  opacity: 1;
+}

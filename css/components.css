@@ -1,0 +1,351 @@
+/**
+ * Component Styles
+ * 
+ * 本文件包含所有UI组件样式
+ * - 卡片 (.card)
+ * - 学生卡片 (.student-card)
+ * - 统计卡片 (.stats-card)
+ * - 表格 (#summary-table)
+ * - 模态框 (#batch-import-modal)
+ * - 空状态 (.empty-state)
+ * - Toast (#toast)
+ * - 操作组 (.operation-group)
+ * - 数量徽章 (.count-badge)
+ */
+
+/* ========== 卡片 ========== */
+.card {
+  background-color: var(--bg-card);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease, background-color 0.3s ease;
+  border: 1px solid var(--border-light);
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ========== 学生卡片 ========== */
+.student-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.875rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.student-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.student-card .name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: -0.25rem;
+}
+
+.student-card .btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.student-card .btn-group .operation-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* 清零按钮默认隐藏，悬停在计数徽章或清零按钮上时显示 */
+.student-card .btn-clear {
+  opacity: 0;
+  visibility: visible;
+  flex: 1;
+  transition: opacity 0.25s ease;
+}
+
+.student-card .count-badge:hover + .btn-clear,
+.student-card .btn-clear:hover {
+  opacity: 1;
+}
+
+/* ========== 统计卡片 ========== */
+.stats-card {
+  background-color: var(--bg-card);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.stats-card h3 {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.stats-card p {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.stats-card-library p {
+  color: var(--primary);
+}
+
+.stats-card-circulation p {
+  color: var(--success);
+}
+
+.stats-card-students p {
+  color: var(--secondary);
+}
+
+/* ========== 汇总表格 ========== */
+#summary-table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: var(--bg-card);
+  table-layout: fixed;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+#summary-table th {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: padding 0.3s ease;
+}
+
+#summary-table td,
+#summary-table th {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: padding 0.3s ease, width 0.3s ease;
+}
+
+#summary-table tr:hover {
+  background-color: var(--bg-secondary);
+}
+
+#summary-table tr:last-child {
+  background-color: var(--accent-light) !important;
+}
+
+/* ========== 大屏幕布局 (> 1024px) - 完整列布局 ========== */
+@media (min-width: 1024px) {
+  #summary-table th,
+  #summary-table td {
+    width: calc(100% / var(--total-columns, 5));
+    min-width: 100px;
+    max-width: 180px;
+  }
+
+  #summary-table th:first-child,
+  #summary-table td:first-child,
+  #summary-table th:last-child,
+  #summary-table td:last-child {
+    text-align: center;
+  }
+}
+
+/* ========== 中等屏幕布局 (768px - 1024px) - 紧凑布局 ========== */
+@media (min-width: 768px) and (max-width: 1023px) {
+  #summary-table th,
+  #summary-table td {
+    padding: 0.5rem 0.75rem;
+    width: calc(100% / var(--total-columns, 5));
+    min-width: 80px;
+    max-width: 150px;
+  }
+
+  #summary-table th:first-child,
+  #summary-table td:first-child,
+  #summary-table th:last-child,
+  #summary-table td:last-child {
+    text-align: center;
+  }
+}
+
+/* ========== 小屏幕布局 (< 768px) - 横向滚动布局 ========== */
+@media (max-width: 767px) {
+  #summary-scroll-area {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  #summary-table {
+    width: 640px;
+    min-width: 640px;
+  }
+
+  #summary-table th,
+  #summary-table td {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.875rem;
+    width: calc(640px / var(--total-columns, 5));
+    min-width: 100px;
+  }
+
+  #summary-table th:first-child,
+  #summary-table td:first-child,
+  #summary-table th:last-child,
+  #summary-table td:last-child {
+    text-align: center;
+  }
+}
+
+/* ========== 表格滚动模式 ========== */
+#summary-wrapper {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background-color: var(--bg-card);
+  transition: all 0.3s ease;
+}
+
+#summary-wrapper.full {
+  overflow: visible;
+}
+
+#summary-wrapper.scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* 表格内部滚动条美化 */
+#summary-wrapper.scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+#summary-wrapper.scrollable::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+#summary-wrapper.scrollable::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+#summary-wrapper.scrollable::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ========== 模态框 ========== */
+#batch-import-modal {
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+#batch-import-modal:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  transform: scale(0.95);
+  transition: transform 0.2s ease;
+}
+
+#batch-import-modal:not(.hidden) .modal-content {
+  transform: scale(1);
+}
+
+/* ========== 空状态 ========== */
+.empty-state {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 3rem 1rem;
+  grid-column: 1 / -1;
+}
+
+.empty-state i {
+  font-size: 2.5rem;
+  color: var(--border);
+  margin-bottom: 1rem;
+}
+
+/* ========== Toast 提示 ========== */
+#toast {
+  opacity: 0;
+  transition: all 0.3s ease;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#toast.show {
+  opacity: 0.95;
+}
+
+/* ========== 操作组 ========== */
+.operation-group {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.125rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+}
+
+/* ========== 数量徽章 ========== */
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  height: auto;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  text-align: center;
+}
+
+.count-badge-library {
+  color: var(--primary);
+  border-color: var(--primary);
+  background-color: var(--accent-light);
+}
+
+.count-badge-circulation {
+  color: var(--success);
+  border-color: var(--success);
+  background-color: var(--success-light);
+}

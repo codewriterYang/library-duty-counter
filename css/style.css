@@ -1,0 +1,16 @@
+/**
+ * Library Duty Counter - Main Stylesheet
+ * 
+ * 项目：图书馆勤工助学值班记录器
+ * 版本：2.3
+ * 
+ * 本文件是主样式表，通过 @import 引入所有模块化CSS文件
+ * 确保加载顺序：变量 > 基础 > 按钮 > 组件 > 布局
+ */
+
+/* CSS Modules */
+@import url('variables.css');
+@import url('base.css');
+@import url('buttons.css');
+@import url('components.css');
+@import url('layout.css');
